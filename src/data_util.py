@@ -32,6 +32,36 @@ def obesity_data():
     return train_test_split(
         f, l, test_size=0.2, random_state=42)  # Can change to 0.2
 
+def obesity_gene_marker_data():
+    marker_presence = 'marker_presence_obesity.txt'
+    f = pd.read_csv(marker_presence, sep='\t', header=None, index_col=0, dtype=unicode)
+    f = f.T
+    f.set_index('sampleID', inplace=True)
+
+    # define = '1:disease:obesity'
+    # d = pd.DataFrame([s.split(':') for s in define.split(',')])
+    # l = pd.DataFrame([0] * len(f))
+    # for i in range(len(d)):
+    #     tmp = (f[d.iloc[i, 1]].isin(d.iloc[i, 2:])).tolist()
+    #     l[tmp] = d.iloc[i, 0]
+    #
+    # l = l.ix[:,0]
+    l = f['disease']
+
+    encoder = LabelEncoder()
+    l = pd.Series(encoder.fit_transform(l),
+                  index=l.index, name=l.name)
+
+    feature_identifier = "gi|"
+    feat = [s for s in f.columns if sum([s2 in s for s2 in feature_identifier.split(':')]) > 0]
+    f = f.loc[:, feat].astype('float')
+    # normalize make the elm work better
+    f = (f - f.min()) / (f.max() - f.min())
+
+    return train_test_split(
+        f, l, test_size=0.2, random_state=42)  # Can change to 0.2
+
+
 
 # only take the normal and cancer data, exclude adenoma data
 def colorectal_adenoma_cancer_data():

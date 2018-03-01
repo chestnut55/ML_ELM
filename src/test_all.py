@@ -10,7 +10,7 @@ from elm import GenELMClassifier, BaseELM, ELMClassifier
 from random_layer import RBFRandomLayer
 import numpy as np
 
-A, P, Y, Q = data.t2d_data()
+A, P, Y, Q = data.obesity_gene_marker_data()
 
 clf = RandomForestClassifier(
     n_estimators=7000, random_state=0, criterion='entropy', min_samples_split=20).fit(A, Y.values.ravel())
@@ -35,7 +35,7 @@ print ("Accuracy of SVM: " + str(clf4.score(P, Q)))
 clf5 = GaussianNB().fit(A, Y.values.ravel())
 print ("Accuracy of Gaussian Naive Bayes Classifier: " + str(clf5.score(P, Q)))
 
-srhl_rbf = RBFRandomLayer(n_hidden=100, rbf_width=0.1, random_state=0)
+srhl_rbf = RBFRandomLayer(n_hidden=50, rbf_width=0.1, random_state=0)
 clf6 = GenELMClassifier(hidden_layer=srhl_rbf).fit(A, Y.values.ravel())
 print ("Accuracy of Extreme learning machine Classifier: " + str(clf6.score(P, Q)))
 
