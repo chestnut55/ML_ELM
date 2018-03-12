@@ -1,3 +1,8 @@
+"""
+CNN and Classifier model, CNN first then Classifier
+CNN - for the futures extractions
+Classifier - for output classifications
+"""
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -33,7 +38,7 @@ def conv_net_classifier():
     L1 = 32  # number of convolutions for first layer
     L2 = 64  # number of convolutions for second layer
     L3 = 1024  # number of neurons for dense layer
-    learning_date = 1e-5  # learning rate
+    learning_date = 1e-4  # learning rate
     epochs = 1  # number of times we loop through training data
     batch_size = 10  # number of data per batch
 

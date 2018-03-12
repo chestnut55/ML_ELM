@@ -24,6 +24,7 @@ def obesity_data():
     # normalize make the elm work better
     f = (f - f.min()) / (f.max() - f.min())
 
+
     return train_test_split(f, one_hot_encoded, test_size=0.2, random_state=42)  # Can change to 0.2
 
 def obesity_gene_marker_data():
@@ -53,6 +54,7 @@ def obesity_gene_marker_data():
 
 def hmp_hmpii_data():
     abundance = 'abundance_hmp-hmpii-ibd-cirrhosis-t2d_long-t2d_short-WT2D-colorectal--bodysite-stool--disease-n-t2d.txt'
+    # abundance = 'abundance_hmp-hmpii-ibd-cirrhosis-t2d_long-t2d_short-colorectal--bodysite-stool.txt'
     f = pd.read_csv(abundance, sep='\t', header=None, index_col=0, dtype=unicode)
     f = f.T
     f.set_index('sampleID', inplace=True)
@@ -79,4 +81,4 @@ def hmp_hmpii_data():
 if __name__ == '__main__':
     col1 = hmp_hmpii_data()
     col2 = obesity_data()
-    print len(col2-col1)
+    print(len(col2-col1))

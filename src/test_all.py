@@ -14,7 +14,7 @@ import numpy as np
 A, P, Y, Q = data.colorectal_cancer_data()
 
 clf = RandomForestClassifier(
-    n_estimators=200, random_state=0, criterion='entropy', min_samples_split=20).fit(A, Y.values.ravel())
+    n_estimators=1000, random_state=0, criterion='entropy', min_samples_split=20).fit(A, Y.values.ravel())
 print ("Accuracy of Random Forest Classifier: " + str(clf.score(P, Q)))
 
 # algorithm, learning_rate_init, alpha, hidden_layer_sizes
