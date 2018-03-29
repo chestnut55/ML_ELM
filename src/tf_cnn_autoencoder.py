@@ -139,7 +139,7 @@ def conv_net_classifier():
     b_fc2 = bias_variable([classes])
     y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, w_fc2) + b_fc2)
 
-    cross_entropy = tf.reduce_mean(-tf.reduce_mean(ys * tf.log(y_conv), reduction_indices=[1]))
+    cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(y_conv), reduction_indices=[1]))
     train_step = tf.train.AdamOptimizer(learning_date).minimize(cross_entropy)
 
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(ys, 1))

@@ -11,7 +11,7 @@ from elm import GenELMClassifier, BaseELM, ELMClassifier
 from random_layer import RBFRandomLayer, GRBFRandomLayer
 import numpy as np
 
-A, P, Y, Q = data.colorectal_cancer_data()
+A, P, Y, Q = data.obesity_gene_marker_data()
 
 clf = RandomForestClassifier(
     n_estimators=1000, random_state=0, criterion='entropy', min_samples_split=20).fit(A, Y.values.ravel())

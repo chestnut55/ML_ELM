@@ -39,22 +39,22 @@ def max_pool_2x2(x):
 def conv_net_classifier():
     train_data, test_data, train_labels, test_labels = load.hmp_hmpii_data()
     # auto encoder
-    num_hidden_1 = 1024
-    num_hidden_2 = 512
+    num_hidden_1 = 512
+    # num_hidden_2 = 512
     num_input = train_data.shape[1]
     X = tf.placeholder("float", [None, num_input])
     weights = {
         'encoder_h1': tf.Variable(tf.random_normal([num_input, num_hidden_1])),
-        'encoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_hidden_2])),
-        'decoder_h1': tf.Variable(tf.random_normal([num_hidden_2, num_hidden_1])),
-        'decoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_input]))
+        # 'encoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_hidden_2])),
+        'decoder_h1': tf.Variable(tf.random_normal([num_hidden_1, num_input])),
+        # 'decoder_h2': tf.Variable(tf.random_normal([num_hidden_1, num_input]))
     }
 
     biases = {
         'encoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
-        'encoder_b2': tf.Variable(tf.random_normal([num_hidden_2])),
-        'decoder_b1': tf.Variable(tf.random_normal([num_hidden_1])),
-        'decoder_b2': tf.Variable(tf.random_normal([num_input]))
+        # 'encoder_b2': tf.Variable(tf.random_normal([num_hidden_2])),
+        'decoder_b1': tf.Variable(tf.random_normal([num_input])),
+        # 'decoder_b2': tf.Variable(tf.random_normal([num_input]))
     }
 
 
@@ -62,17 +62,17 @@ def conv_net_classifier():
     L2 = 64  # number of convolutions for second layer
     L3 = 1024  # number of neurons for dense layer
     learning_date = 1e-4  # learning rate
-    epochs = 1  # number of times we loop through training data
+    epochs = 10  # number of times we loop through training data
     batch_size = 10  # number of data per batch
 
 
     classes = train_labels.shape[1]
     sess = tf.InteractiveSession()
 
-    xs = tf.placeholder(tf.float32, [None, num_hidden_2])
+    xs = tf.placeholder(tf.float32, [None, num_hidden_1])
     ys = tf.placeholder(tf.float32, [None, classes])
     keep_prob = tf.placeholder(tf.float32)
-    x_shape = tf.reshape(xs, [-1, 1, num_hidden_2, 1])
+    x_shape = tf.reshape(xs, [-1, 1, num_hidden_1, 1])
     ###############autoencoder#########################################################
     train_features_ace = np.zeros((len(train_data), num_hidden_1), dtype=float)
     train_labels_ace = np.zeros(len(train_data), dtype=int)
@@ -82,18 +82,18 @@ def conv_net_classifier():
         # Encoder Hidden layer with sigmoid activation #1
         layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']), biases['encoder_b1']))
         # Encoder Hidden layer with sigmoid activation #2
-        layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
+        # layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']), biases['encoder_b2']))
 
-        return layer_2
+        return layer_1
 
     # Buildding the decoder
     def decoder(x):
         # Decoder Hidden layer with sigmoid activation #1
         layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']), biases['decoder_b1']))
         # Decoder Hidden layer with sigmoid activation #2
-        layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
+        # layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']), biases['decoder_b2']))
 
-        return layer_2
+        return layer_1
     # Construct model
     encoder_op = encoder(X)
     decoder_op = decoder(encoder_op)
@@ -119,7 +119,7 @@ def conv_net_classifier():
     h_conv2 = tf.nn.relu(conv2d(h_pool1, w_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
 
-    tmp_shape = (int)(math.ceil(num_hidden_2/4.0))
+    tmp_shape = (int)(math.ceil(num_hidden_1/4.0))
     h_pool2_flat = tf.reshape(h_pool2, [-1, 1 * tmp_shape * L2])
 
     # third dense layer,full connected
@@ -134,7 +134,7 @@ def conv_net_classifier():
     b_fc2 = bias_variable([classes])
     y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, w_fc2) + b_fc2)
 
-    cross_entropy = tf.reduce_mean(-tf.reduce_mean(ys * tf.log(y_conv), reduction_indices=[1]))
+    cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(y_conv), reduction_indices=[1]))
     train_step = tf.train.AdamOptimizer(learning_date).minimize(cross_entropy)
 
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(ys, 1))
@@ -153,8 +153,8 @@ def conv_net_classifier():
         train_labels_classifier[i] = np.sum(np.multiply(converter, train_labels[i, :]))
     for j in range(len(test_labels)):
         test_labels_classifier[j] = np.sum(np.multiply(converter, test_labels[j, :]))
-    clf = svm.SVC(kernel='rbf', C=1, gamma=0.001, random_state=0, probability=True)
-    # clf = RandomForestClassifier(n_estimators=100, random_state=0)
+    # clf = svm.SVC(kernel='rbf', C=1, gamma=0.001, random_state=0, probability=True)
+    clf = RandomForestClassifier(n_estimators=1000, random_state=0)
     # srhl_rbf = RBFRandomLayer(n_hidden=50, rbf_width=0.1, random_state=0)
     # clf = GenELMClassifier(hidden_layer=srhl_rbf)
     clf.fit(train_data, train_labels_classifier)
@@ -177,39 +177,48 @@ def conv_net_classifier():
     ##############################################
 
     ### cnn start train##################################
-    for epoch in range(epochs):
-        # print 'epoch: ' + str(epoch)
-        for batch in range(len(train_features_ace) // batch_size):
-            offset = (batch * batch_size) % len(train_features_ace)
-            batch_data = train_features_ace[offset:(offset + batch_size)]
-            batch_labels = train_labels_ace[offset:(offset + batch_size)]
-            train_step.run(feed_dict={xs: batch_data, ys: batch_labels, keep_prob: 0.5})
+    # for epoch in range(epochs):
+    #     # print 'epoch: ' + str(epoch)
+    #     for batch in range(len(train_features_ace) // batch_size):
+    #         offset = (batch * batch_size) % len(train_features_ace)
+    #         batch_data = train_features_ace[offset:(offset + batch_size)]
+    #         batch_labels = train_labels_ace[offset:(offset + batch_size)]
+    #         train_step.run(feed_dict={xs: batch_data, ys: batch_labels, keep_prob: 0.5})
+    train_step.run(feed_dict={xs: train_features_ace, ys: train_labels_ace, keep_prob: 0.5})
     ### cnn test###
     accuracy = accuracy.eval(feed_dict={xs: test_features_ace, ys: test_labels_ace, keep_prob: 1.0})
     print "conv_net accuracy = " + str(accuracy)
 
     # ### cnn and classifier start train####################
-    for epoch in range(epochs):
-        for batch in range(len(train_features_ace) // batch_size):
-            offset = (batch * batch_size) % len(train_features_ace)
-            train_batch_data = train_features_ace[offset:(offset + batch_size)]
-            train_batch_labels = train_labels_ace[offset:(offset + batch_size)]
 
-            features_batch = h_fc1.eval(feed_dict={xs: train_batch_data})
-
-            for j in range(batch_size):
-                for k in range(L3):
-                    train_features_cnn[batch_size * batch + j, k] = features_batch[j, k]
-                train_labels_cnn[batch_size * batch + j] = np.sum(np.multiply(converter, train_batch_labels[j, :]))
+    train_features_cnn = h_fc1.eval(feed_dict={xs: train_features_ace})
+    for i in range(len(train_features_cnn)):
+        train_labels_cnn[i] = np.sum(np.multiply(converter, train_labels_ace[i, :]))
 
     test_features_cnn = h_fc1.eval(feed_dict={xs: test_features_ace})
     for j in range(len(test_features_cnn)):
         test_labels_cnn[j] = np.sum(np.multiply(converter, test_labels_ace[j, :]))
+    # for epoch in range(epochs):
+    #     for batch in range(len(train_features_ace) // batch_size):
+    #         offset = (batch * batch_size) % len(train_features_ace)
+    #         train_batch_data = train_features_ace[offset:(offset + batch_size)]
+    #         train_batch_labels = train_labels_ace[offset:(offset + batch_size)]
+    #
+    #         features_batch = h_fc1.eval(feed_dict={xs: train_batch_data})
+    #
+    #         for j in range(batch_size):
+    #             for k in range(L3):
+    #                 train_features_cnn[batch_size * batch + j, k] = features_batch[j, k]
+    #             train_labels_cnn[batch_size * batch + j] = np.sum(np.multiply(converter, train_batch_labels[j, :]))
+    #
+    # test_features_cnn = h_fc1.eval(feed_dict={xs: test_features_ace})
+    # for j in range(len(test_features_cnn)):
+    #     test_labels_cnn[j] = np.sum(np.multiply(converter, test_labels_ace[j, :]))
 
     # ###############################################################################
-    clf = svm.SVC(kernel='rbf', C=1, gamma=0.001, random_state=0, probability=True)
-    clf.fit(train_features_cnn, train_labels_cnn)
-    conv_clf_accuracy = clf.score(test_features_cnn, test_labels_cnn)
+    # clf = svm.SVC(kernel='rbf', C=1, gamma=0.001, random_state=0, probability=True)
+    clf.fit(train_features_ace, train_labels_ace)
+    conv_clf_accuracy = clf.score(test_features_ace, test_labels_ace)
     print "conv_net classifier accuracy = " + str(conv_clf_accuracy)
 
     sess.close()

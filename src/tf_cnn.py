@@ -35,14 +35,18 @@ def max_pool_2x2(x):
 
 
 def conv_net_classifier():
+
+    # reset everything to rerun in jupyter
+    tf.reset_default_graph()
+
     L1 = 32  # number of convolutions for first layer
     L2 = 64  # number of convolutions for second layer
     L3 = 1024  # number of neurons for dense layer
     learning_date = 1e-4  # learning rate
-    epochs = 1  # number of times we loop through training data
+    epochs = 10  # number of times we loop through training data
     batch_size = 10  # number of data per batch
 
-    train_data, test_data, train_labels, test_labels = load.hmp_hmpii_data()
+    train_data, test_data, train_labels, test_labels = load.cirrhosis_data()
     features = train_data.shape[1]
     print "features:"+str(features)
     classes = train_labels.shape[1]
@@ -81,11 +85,14 @@ def conv_net_classifier():
     b_fc2 = bias_variable([classes])
     y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, w_fc2) + b_fc2)
 
-    cross_entropy = tf.reduce_mean(-tf.reduce_mean(ys * tf.log(y_conv), reduction_indices=[1]))
-    train_step = tf.train.AdamOptimizer(learning_date).minimize(cross_entropy)
+    with tf.name_scope('loss'):
+        cost = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(y_conv), reduction_indices=[1]))
+    with tf.name_scope('SGD'):
+        optimizer = tf.train.AdamOptimizer(learning_date).minimize(cost)
 
     correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(ys, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    with tf.name_scope('accuracy'):
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     train_features_cnn = np.zeros((len(train_data), L3), dtype=float)
     train_labels_cnn = np.zeros(len(train_data), dtype=int)
@@ -109,18 +116,35 @@ def conv_net_classifier():
     print "classifier accuracy = " + str(clf_accuracy)
     #####################################################
 
-    sess.run(tf.global_variables_initializer())
+    init = tf.global_variables_initializer()
+    tf.summary.scalar("loss", cost)
+    tf.summary.scalar("accuracy", accuracy)
+    summary_op =  tf.summary.merge_all()
+    sess.run(init)
+    summary_writer = tf.summary.FileWriter('/home/qiang/graphs',graph=tf.get_default_graph())
+
+
     ### cnn start train##################################
     for epoch in range(epochs):
         # print 'epoch: ' + str(epoch)
+        avg_cost = 0.
+        avg_acc = 0.
         for batch in range(len(train_data) // batch_size):
             offset = (batch * batch_size) % len(train_data)
             batch_data = train_data[offset:(offset + batch_size)]
             batch_labels = train_labels[offset:(offset + batch_size)]
-            train_step.run(feed_dict={xs: batch_data, ys: batch_labels, keep_prob: 0.5})
+            _, c,acc, summary = sess.run([optimizer, cost,accuracy, summary_op],
+                                     feed_dict={xs: batch_data, ys: batch_labels, keep_prob: 0.5})
+            summary_writer.add_summary(summary, epoch * batch_size +  batch)
+            avg_cost += c / (len(train_data) // batch_size)
+            avg_acc += acc / (len(train_data) // batch_size)
+        print("Epoch:", '%04d' % (epoch), "loss={:.9f}".format(avg_cost),"accuracy={:.9f}".format(avg_acc))
     ### cnn test###
     accuracy = accuracy.eval(feed_dict={xs: test_data, ys: test_labels, keep_prob: 1.0})
     print "conv_net accuracy = " + str(accuracy)
+    print"Run the command line:\n" \
+         "--> tensorboard --logdir=//home/qiang/graphs " \
+         "\nThen open http://0.0.0.0:6006/ into your web browser"
 
     ### cnn and classifier start train####################
     for epoch in range(epochs):
